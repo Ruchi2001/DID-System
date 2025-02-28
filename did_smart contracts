@@ -1,0 +1,84 @@
+import json
+import hashlib
+from web3 import Web3
+from eth_account import Account
+
+# Connect to Ethereum Testnet (Sepolia)
+INFURA_URL = "https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID"
+w3 = Web3(Web3.HTTPProvider(INFURA_URL))
+
+# Generate Ethereum Account (DID Owner)
+account = Account.create()
+DID_owner = account.address
+private_key = account.key.hex()
+
+print(f"New DID Created: {DID_owner}")
+
+# Function to create a DID
+def create_did(name, metadata_uri):
+    did_hash = hashlib.sha256(f"{DID_owner}{name}{metadata_uri}".encode()).hexdigest()
+    did_data = {
+        "DID": f"did:eth:{DID_owner}",
+        "Name": name,
+        "Metadata": metadata_uri,
+        "DID Hash": did_hash,
+        "Revoked": False
+    }
+    return did_data
+
+# Function to issue a Verifiable Credential
+def issue_credential(issuer, subject, credential_data):
+    credential_id = hashlib.sha256(f"{issuer}{subject}{credential_data}".encode()).hexdigest()
+    credential = {
+        "Issuer": issuer,
+        "Subject": subject,
+        "Credential Data": credential_data,
+        "Credential ID": credential_id,
+        "Revoked": False
+    }
+    return credential
+
+# Function to verify a credential
+def verify_credential(credential):
+    return not credential["Revoked"]
+
+# Function to create an identity attestation
+def create_attestation(attester, subject, attestation_data):
+    attestation_id = hashlib.sha256(f"{attester}{subject}{attestation_data}".encode()).hexdigest()
+    attestation = {
+        "Attester": attester,
+        "Subject": subject,
+        "Attestation Data": attestation_data,
+        "Attestation ID": attestation_id,
+        "Revoked": False
+    }
+    return attestation
+
+# Function to revoke a DID, credential, or attestation
+def revoke_entry(entry):
+    entry["Revoked"] = True
+    return entry
+
+# Test the System
+if __name__ == "__main__":
+    # Create a new DID
+    did = create_did("Alice", "ipfs://metadata_hash")
+    print("\nDID Created:", json.dumps(did, indent=4))
+
+    # Issue a credential
+    credential = issue_credential(DID_owner, "Bob", "ipfs://credential_hash")
+    print("\nCredential Issued:", json.dumps(credential, indent=4))
+
+    # Verify credential
+    print("\nIs Credential Valid?", verify_credential(credential))
+
+    # Create attestation
+    attestation = create_attestation(DID_owner, "Bob", "Bob's identity verified")
+    print("\nAttestation Created:", json.dumps(attestation, indent=4))
+
+    # Revoke credential
+    credential = revoke_entry(credential)
+    print("\nCredential Revoked:", json.dumps(credential, indent=4))
+
+    # Verify credential after revocation
+    print("\nIs Credential Valid After Revocation?", verify_credential(credential))
