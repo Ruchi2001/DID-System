@@ -1,0 +1,27 @@
+import React, { useState } from "react";
+import didContract from "./web3";
+
+function App() {
+  const [metadataURI, setMetadataURI] = useState("");
+
+  const createDID = async () => {
+    try {
+      const tx = await didContract.createDID(metadataURI);
+      await tx.wait();
+      alert("DID created successfully!");
+    } catch (error) {
+      console.error(error);
+      alert("Error creating DID.");
+    }
+  };
+
+  return (
+    <div>
+      <h1>Decentralized Identity (DID) System</h1>
+      <input type="text" placeholder="Enter Metadata URI" onChange={(e) => setMetadataURI(e.target.value)} />
+      <button onClick={createDID}>Create DID</button>
+    </div>
+  );
+}
+
+export default App;
